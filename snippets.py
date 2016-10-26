@@ -13,7 +13,13 @@ def put(name, snippet):
     logging.info("Storing snippet {!r}: {!r}".format(name, snippet))
     cursor = connection.cursor()
     command = "insert into snippets values (%s, %s)"
-    cursor.execute(command, (name, snippet))
+    try:
+        command = "insert into snippets values (%s, %s)"
+        cursor.execute(command, (name, snippet))
+    except psycopg2.IntegrityError as e:
+        connection.rollback()
+        command = "update snippets set message=%s where keyword=%s"
+        cursor.execute(command, (snippet, name))
     connection.commit()
     logging.debug("Snippet stored successfully.")
     return name, snippet
@@ -22,9 +28,9 @@ def get(name):
     """Retrieve the snippet with a given name."""
     logging.info("Retrieving snippet {!r}".format(name))
     cursor = connection.cursor() 
-    row = cursor.fetchone()
     command = "select message from snippets where keyword=%s"
     cursor.execute(command, (name,))
+    row = cursor.fetchone()
     connection.commit()
     logging.debug("Snippet retrieved successfully.")
     if not row:
@@ -49,7 +55,6 @@ def main():
     logging.debug("Constructing get subparser")
     get_parser = subparsers.add_parser("get", help="Retrieve a snippet")
     get_parser.add_argument("name", help="Name of the snippet")
-    get_parser.add_argument("snippet", help="Snippet text")
     
     arguments = parser.parse_args()
     # Convert parsed arguments from Namespace to dictionary
