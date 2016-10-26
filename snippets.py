@@ -20,7 +20,7 @@ def put(name, snippet):
     
 def get(name):
     """Retrieve the snippet with a given name."""
-    logging.info("Retrieving snippet {!r})".format(name))
+    logging.info("Retrieving snippet {!r}".format(name))
     cursor = connection.cursor() 
     row = cursor.fetchone()
     command = "select message from snippets where keyword=%s"
