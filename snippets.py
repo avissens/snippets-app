@@ -47,10 +47,9 @@ def main():
 
     # Subparser for the get command
     logging.debug("Constructing get subparser")
-    get_parser = subparsers.add_parser("get")
-    get_parser.add_argument("name")
-    get_parser.add_argument("snippet")
-    
+    get_parser = subparsers.add_parser("get", help="Retrieve a snippet")
+    get_parser.add_argument("name", help="Name of the snippet")
+    get_parser.add_argument("snippet", help="Snippet text")
     
     arguments = parser.parse_args()
     # Convert parsed arguments from Namespace to dictionary
