@@ -23,11 +23,14 @@ def get(name):
     logging.info("Retrieving snippet {!r})".format(name))
     cursor = connection.cursor() 
     row = cursor.fetchone()
-    command = "select message from snippets %s"
+    command = "select message from snippets where keyword=%s"
     cursor.execute(command, (name,))
     connection.commit()
     logging.debug("Snippet retrieved successfully.")
-    return row
+    if not row:
+        # No snippet was found with that name.
+        return "404: Snippet Not Found"
+    return row[0]
     
 def main():
     """Main function"""
