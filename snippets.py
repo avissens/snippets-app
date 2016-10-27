@@ -11,31 +11,42 @@ logging.debug("Database connection established.")
 def put(name, snippet):
     """Store a snippet with an associated name."""
     logging.info("Storing snippet {!r}: {!r}".format(name, snippet))
-    cursor = connection.cursor()
-    command = "insert into snippets values (%s, %s)"
-    try:
-        command = "insert into snippets values (%s, %s)"
-        cursor.execute(command, (name, snippet))
-    except psycopg2.IntegrityError as e:
-        connection.rollback()
-        command = "update snippets set message=%s where keyword=%s"
-        cursor.execute(command, (snippet, name))
-    connection.commit()
+    with connection, connection.cursor() as cursor:
+        try:
+            command = "insert into snippets values (%s, %s)"
+            cursor.execute(command, (name, snippet))
+        except psycopg2.IntegrityError as e:
+            connection.rollback()
+            command = "update snippets set message=%s where keyword=%s"
+            cursor.execute(command, (snippet, name))
+        connection.commit()
     logging.debug("Snippet stored successfully.")
     return name, snippet
     
 def get(name):
     """Retrieve the snippet with a given name."""
     logging.info("Retrieving snippet {!r}".format(name))
-    cursor = connection.cursor() 
-    command = "select message from snippets where keyword=%s"
-    cursor.execute(command, (name,))
-    row = cursor.fetchone()
-    connection.commit()
+    with connection, connection.cursor() as cursor:
+        cursor.execute("select message from snippets where keyword=%s", (name,))
+        row = cursor.fetchone()
     logging.debug("Snippet retrieved successfully.")
     if not row:
         # No snippet was found with that name.
         return "404: Snippet Not Found"
+    return row[0]
+    
+def search(snippet):
+#    Retrieve the snippet with a given message.
+    logging.info("Retrieving name {!r}".format(snippet))
+    cursor = connection.cursor()
+    command = "select name from snippet where message=%s"
+    cursor.execute(command, (snippet,))
+    row = cursor.fetchone()
+    connection.commit()
+    logging.debug("Name retrieved successfully.")
+    if not row:
+        # No snippet was found with that message.
+        return "404: Name Not Found"
     return row[0]
     
 def main():
@@ -56,6 +67,11 @@ def main():
     get_parser = subparsers.add_parser("get", help="Retrieve a snippet")
     get_parser.add_argument("name", help="Name of the snippet")
     
+    # Subparser for the search command
+    logging.debug("Constructing search subparser")
+    search_parser = subparsers.add_parser("search", help="Retrieve a name")
+    search_parser.add_argument("snippet", help="Snippet text")
+    
     arguments = parser.parse_args()
     # Convert parsed arguments from Namespace to dictionary
     arguments = vars(arguments)
@@ -67,6 +83,9 @@ def main():
     elif command == "get":
         snippet = get(**arguments)
         print("Retrieved snippet: {!r}".format(snippet))
+    elif command == "search":
+        name = search(**arguments)
+        print("Retrieved name: {!r}".format(name))
 
 if __name__ == "__main__":
     main()
