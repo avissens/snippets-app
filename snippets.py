@@ -52,16 +52,16 @@ def get_name(snippet):
     
 def search(term):
     """Search the snippet by a given term."""
-    logging.info("Searching snippets with %{!r}%".format(term))
+    logging.info("Searching snippets with {!r}".format(term))
     with connection, connection.cursor() as cursor:
-        command = "select keyword from snippets where message like %s"
-        cursor.execute(command, (term,))
+        command = "select message from snippets where message like %s"
+        cursor.execute(command, ("%" + term + "%",))
         rows = cursor.fetchall()
         for message in rows:
             print(message[0])
     logging.debug("Search successfull.")
     if not rows:
-        # No message was found with that term.
+        # No message was found with that term.        
         return "404: Search returned 0 messages"
     
 def catalog():
@@ -125,8 +125,7 @@ def main():
         name = get_name(**arguments)
         print("Retrieved name: {!r}".format(name))
     elif command == "search":
-        snippet = search(**arguments)
-        print("Snippets found: {!r}".format(snippet))
+        term = search(**arguments)
     elif command == "catalog":
         print("Catalog of all keywords:")
         catalog()
