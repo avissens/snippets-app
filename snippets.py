@@ -50,6 +50,20 @@ def get_name(snippet):
         return "404: Name Not Found"
     return row[0]
     
+def search(term):
+    """Search the snippet by a given term."""
+    logging.info("Searching snippets with %{!r}%".format(term))
+    with connection, connection.cursor() as cursor:
+        command = "select keyword from snippets where message like %s"
+        cursor.execute(command, (term,))
+        rows = cursor.fetchall()
+        for message in rows:
+            print(message[0])
+    logging.debug("Search successfull.")
+    if not rows:
+        # No message was found with that term.
+        return "404: Search returned 0 messages"
+    
 def catalog():
     """Query the keywords from the snippets table."""
     logging.info("Quering the keywords")
@@ -61,7 +75,7 @@ def catalog():
             print(keyword[0])
     logging.debug("Query successfull.")
     if not rows:
-        # No snippet was found with that name.
+        # No keywords was found.
         return "404: No Keywords Found"
 
 def main():
@@ -87,6 +101,11 @@ def main():
     get_name_parser = subparsers.add_parser("get_name", help="Retrieve a name")
     get_name_parser.add_argument("snippet", help="Snippet text")
     
+    # Subparser for the search command
+    logging.debug("Constructing search subparser")
+    search_parser = subparsers.add_parser("search", help="Searching snippets")
+    search_parser.add_argument("term", help="Term in a snippet text")
+    
     # Subparser for the cataloge command
     logging.debug("Constructing catalog subparser")
     catalog_parser = subparsers.add_parser("catalog", help="Catalog all keywords")
@@ -105,6 +124,9 @@ def main():
     elif command == "get_name":
         name = get_name(**arguments)
         print("Retrieved name: {!r}".format(name))
+    elif command == "search":
+        snippet = search(**arguments)
+        print("Snippets found: {!r}".format(snippet))
     elif command == "catalog":
         print("Catalog of all keywords:")
         catalog()
