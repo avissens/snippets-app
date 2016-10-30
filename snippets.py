@@ -8,17 +8,17 @@ logging.debug("Connecting to PostgreSQL")
 connection = psycopg2.connect(database="snippets")
 logging.debug("Database connection established.")
 
-def put(name, snippet):
+def put(name, snippet, hide):
     """Store a snippet with an associated name."""
     logging.info("Storing snippet {!r}: {!r}".format(name, snippet))
     with connection, connection.cursor() as cursor:
         try:
-            command = "insert into snippets values (%s, %s)"
-            cursor.execute(command, (name, snippet))
+            command = "insert into snippets values (%s, %s, %s)"
+            cursor.execute(command, (name, snippet, hide))
         except psycopg2.IntegrityError as e:
             connection.rollback()
             command = "update snippets set message=%s where keyword=%s"
-            cursor.execute(command, (snippet, name))
+            cursor.execute(command, (snippet, name, hide))
         connection.commit()
     logging.debug("Snippet stored successfully.")
     return name, snippet
@@ -54,11 +54,12 @@ def search(term):
     """Search the snippet by a given term."""
     logging.info("Searching snippets with {!r}".format(term))
     with connection, connection.cursor() as cursor:
-        command = "select message from snippets where message like %s"
+        command = "select * from snippets where not hidden and message like %s"
         cursor.execute(command, ("%" + term + "%",))
         rows = cursor.fetchall()
         for message in rows:
-            print(message[0])
+            print("Keyword: ", message[0])
+            print(message[1])
     logging.debug("Search successfull.")
     if not rows:
         # No message was found with that term.        
@@ -68,7 +69,7 @@ def catalog():
     """Query the keywords from the snippets table."""
     logging.info("Quering the keywords")
     with connection, connection.cursor() as cursor:
-        command = "select keyword from snippets order by keyword"
+        command = "select keyword from snippets where not hidden order by keyword"
         cursor.execute(command)
         rows = cursor.fetchall()
         for keyword in rows:
@@ -90,6 +91,7 @@ def main():
     put_parser = subparsers.add_parser("put", help="Store a snippet")
     put_parser.add_argument("name", help="Name of the snippet")
     put_parser.add_argument("snippet", help="Snippet text")
+    put_parser.add_argument("--hide", help="The hidden flag", action="store_true")
 
     # Subparser for the get command
     logging.debug("Constructing get subparser")
